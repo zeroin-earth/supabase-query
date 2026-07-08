@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    // Environment
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "jsx": "react-jsx",
+    "types": ["bun"],
+
+    // tsdown emits the build; tsc is type-check only
+    "noEmit": true,
+    "verbatimModuleSyntax": true,
+    "esModuleInterop": true,
+
+    // Strictness
+    "strict": true,
+    "skipLibCheck": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true
+  },
+  "include": ["src", "tests"],
+  "exclude": ["dist", "react-native", "node_modules"]
+}

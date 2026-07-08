@@ -1,0 +1,7 @@
+[test]
+preload = ["./tests/setup/preload.ts"]
+
+# The realtime mock (tests/__mocks__/supabase-realtime.ts) is added in P3/P4
+# and appended to this preload list at that point.
+
+coveragePathIgnorePatterns = ["tests/**", "src/offline/network/**"]

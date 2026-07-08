@@ -1,0 +1,106 @@
+{
+  "name": "@zeroin.earth/supabase-query",
+  "version": "0.1.0",
+  "description": "React hooks library for Supabase with offline-first support, powered by @tanstack/react-query",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./react-native": {
+      "import": {
+        "types": "./react-native/index.d.mts",
+        "default": "./react-native/index.mjs"
+      },
+      "require": {
+        "types": "./react-native/index.d.cts",
+        "default": "./react-native/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "react-native"
+  ],
+  "author": "Matt Suhay <matthew.suhay@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "tsc": "tsc --noEmit",
+    "lint": "eslint . --fix",
+    "format": "prettier --write .",
+    "test": "bun test --timeout 30000",
+    "gen:types": "supabase gen types typescript --local > src/database.types.ts",
+    "prepublishOnly": "bun run typecheck && bun run build"
+  },
+  "dependencies": {
+    "@tanstack/query-async-storage-persister": "^5.100.14",
+    "@tanstack/query-persist-client-core": "^5.100.14",
+    "@tanstack/react-query-devtools": "^5.100.14",
+    "@tanstack/react-query-persist-client": "^5.100.14",
+    "immer": "^11.1.8"
+  },
+  "peerDependencies": {
+    "@react-native-async-storage/async-storage": "^3.0.1",
+    "@react-native-community/netinfo": "^12.0.1",
+    "@supabase/supabase-js": "^2.110.1",
+    "@tanstack/react-query": "^5.100.14",
+    "react": "^19.2.0",
+    "react-native-url-polyfill": "^2.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@react-native-async-storage/async-storage": {
+      "optional": true
+    },
+    "@react-native-community/netinfo": {
+      "optional": true
+    },
+    "react-native-url-polyfill": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@happy-dom/global-registrator": "^20.9.0",
+    "@react-native-async-storage/async-storage": "^3.1.0",
+    "@react-native-community/netinfo": "^12.0.1",
+    "@tanstack/react-query": "^5.100.14",
+    "@testing-library/react": "^16.3.2",
+    "@types/bun": "latest",
+    "@types/react": "^19.2.15",
+    "eslint": "^10.4.0",
+    "eslint-plugin-simple-import-sort": "^13.0.0",
+    "happy-dom": "^20.9.0",
+    "prettier": "^3.8.3",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "tsdown": "^0.22.3",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.60.0",
+    "unrun": "^0.3.1"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "keywords": [
+    "supabase",
+    "react",
+    "react-native",
+    "react-query",
+    "tanstack",
+    "hooks",
+    "offline-first"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
