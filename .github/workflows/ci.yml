@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # Fast, stack-free checks: lint, typecheck, and the dual build.
+  build:
+    name: Lint · Typecheck · Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Build (tsdown → dist/ + react-native/)
+        run: bun run build
+
+  # Integration tests run against a live local Supabase stack (bun test +
+  # happy-dom). The suite hits 127.0.0.1:54321 with the deterministic local
+  # demo keys (see tests/setup/localStack.ts).
+  test:
+    name: Test (local Supabase stack)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase (applies migrations)
+        run: supabase start
+
+      - name: Regenerate the fixture Database type
+        run: supabase gen types typescript --local > tests/database.types.ts
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Test
+        run: bun test --timeout 30000
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop

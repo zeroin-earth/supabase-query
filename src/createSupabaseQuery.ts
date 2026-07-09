@@ -3,7 +3,11 @@ import type { ComponentType } from 'react'
 
 import { makeAuthHooks } from './auth/factory'
 import { makeDbHooks } from './db/factory'
+import { makeFunctionHooks } from './functions/factory'
+import { makePushHooks } from './push/factory'
+import { makeStorageHooks } from './storage/factory'
 import type { SupabaseProviderProps } from './SupabaseProvider'
+import { makeTeamsHooks } from './teams/factory'
 import type { AnyDatabase, KVStorage } from './types'
 import { useLazyQuery } from './useLazyQuery'
 import { useMutation } from './useMutation'
@@ -51,6 +55,20 @@ export function makeCreateSupabaseQuery(SupabaseProvider: ComponentType<Supabase
       // P6 — the `auth/` hook set (GoTrue: user/session, login/signup/logout,
       // OAuth, OTP, MFA, identities). Not `Database`-parameterized.
       ...makeAuthHooks(),
+      // P7 — the `storage/` hook set (list/info, upload/update/delete/download,
+      // public + signed URLs). Not `Database`-parameterized.
+      ...makeStorageHooks(),
+      // P8 — the `functions/` hook set: Edge Function invoke + schema-typed
+      // Postgres RPC (read via `useRpc`, mutate via `useCallRpc`).
+      ...makeFunctionHooks<Database>(),
+      // P9 — the `teams/` hook set: library-owned fixed-shape teams module
+      // (schema-of-record shipped in `sql/teams`). Not `Database`-parameterized;
+      // for typed roles or custom names call `makeTeamsHooks<Role>(config)`.
+      ...makeTeamsHooks(),
+      // P9b — the `push/` hook set: library-owned fixed-shape push module
+      // (device_tokens schema shipped in `sql/push`; `send-push` Edge Function).
+      // Not `Database`-parameterized.
+      ...makePushHooks(),
     }
   }
 }

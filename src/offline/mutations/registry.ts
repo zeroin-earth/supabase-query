@@ -7,6 +7,9 @@ import { deleteRowFn } from '../../db/useDeleteRow'
 import { incrementColumnFn } from '../../db/useIncrementColumn'
 import { upsertRowFn } from '../../db/useUpsertRow'
 import { Keys } from '../../query/Keys'
+import { deleteTeamFn } from '../../teams/useDeleteTeam'
+import { updateTeamNameFn } from '../../teams/useUpdateTeamName'
+import { updateTeamPrefsFn } from '../../teams/useUpdateTeamPrefs'
 import type { AnySupabaseClient } from '../../types'
 import type { ConflictStrategy } from '../conflictResolution/types'
 import type { MutationFn, Vars } from '../types'
@@ -33,8 +36,14 @@ type MutationEntry = {
 // through GoTrue, which is inherently online (it mints/refreshes tokens
 // server-side), so they are deliberately absent here (migration plan §6.5). The
 // row `update` entry is registered separately in `hydrateMutationDefaults` so it
-// can carry the user's conflict-resolution strategy. Team-row entries are added
-// by the teams module in P9.
+// can carry the user's conflict-resolution strategy.
+//
+// Teams (P9): only the plain-table team writes are offline-queueable —
+// `useUpdateTeamName`/`useUpdateTeamPrefs`/`useDeleteTeam` (`.from('teams')`).
+// `create_team` and every membership op are RPC / Edge-Function calls and stay
+// online-only, exactly like auth (migration plan §8.8 "Offline wiring"). These
+// use the canonical `teams` table name; a name-overridden project's offline
+// *restart* replay falls back to canonical (an accepted edge case, §8.8).
 export const mutationRegistry: MutationEntry[] = [
   {
     mutationKey: Keys.schema().table('').rows().create(),
@@ -60,6 +69,19 @@ export const mutationRegistry: MutationEntry[] = [
       const vars = variables as IncrementColumnVariables
       return incrementColumnFn(client, { ...vars, amount: -(vars.amount ?? 1) })
     },
+  },
+  // Teams — offline-queueable plain-table writes (P9).
+  {
+    mutationKey: Keys.teams().teamName().update(),
+    mutationFn: supabaseMutation(updateTeamNameFn),
+  },
+  {
+    mutationKey: Keys.teams().teamPrefs().update(),
+    mutationFn: supabaseMutation(updateTeamPrefsFn),
+  },
+  {
+    mutationKey: Keys.teams().delete(),
+    mutationFn: supabaseMutation(deleteTeamFn),
   },
 ]
 

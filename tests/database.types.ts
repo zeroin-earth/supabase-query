@@ -34,6 +34,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      device_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          platform: string
+          provider: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          platform: string
+          provider: string
+          token: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          platform?: string
+          provider?: string
+          token?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       places: {
         Row: {
           created_at: string
@@ -52,6 +79,71 @@ export type Database = {
           id?: string
           location?: unknown
           name?: string
+        }
+        Relationships: []
+      }
+      team_members: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          invite_token: string | null
+          invited_by: string | null
+          roles: string[]
+          status: string
+          team_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          invite_token?: string | null
+          invited_by?: string | null
+          roles?: string[]
+          status?: string
+          team_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          invite_token?: string | null
+          invited_by?: string | null
+          roles?: string[]
+          status?: string
+          team_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          prefs: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          prefs?: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          prefs?: Json
         }
         Relationships: []
       }
@@ -90,6 +182,41 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_invite: {
+        Args: { p_token: string }
+        Returns: {
+          created_at: string
+          email: string | null
+          id: string
+          invite_token: string | null
+          invited_by: string | null
+          roles: string[]
+          status: string
+          team_id: string
+          user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "team_members"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      create_team: {
+        Args: { p_name: string; p_prefs?: Json }
+        Returns: {
+          created_at: string
+          id: string
+          name: string
+          prefs: Json
+        }
+        SetofOptions: {
+          from: "*"
+          to: "teams"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       increment_column: {
         Args: {
           p_amount: number
@@ -99,6 +226,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      is_team_member: {
+        Args: { p_team: string; p_user?: string }
+        Returns: boolean
+      }
+      is_team_owner: {
+        Args: { p_team: string; p_user?: string }
+        Returns: boolean
+      }
+      leave_team: { Args: { p_team: string }; Returns: undefined }
       places_within: {
         Args: { p_lat: number; p_lng: number; p_meters: number }
         Returns: {
@@ -112,6 +248,48 @@ export type Database = {
           to: "places"
           isOneToOne: false
           isSetofReturn: true
+        }
+      }
+      remove_member: { Args: { p_member: string }; Returns: undefined }
+      set_member_status: {
+        Args: { p_member: string; p_status: string }
+        Returns: {
+          created_at: string
+          email: string | null
+          id: string
+          invite_token: string | null
+          invited_by: string | null
+          roles: string[]
+          status: string
+          team_id: string
+          user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "team_members"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      team_active_owner_count: { Args: { p_team: string }; Returns: number }
+      update_member_roles: {
+        Args: { p_member: string; p_roles: string[] }
+        Returns: {
+          created_at: string
+          email: string | null
+          id: string
+          invite_token: string | null
+          invited_by: string | null
+          roles: string[]
+          status: string
+          team_id: string
+          user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "team_members"
+          isOneToOne: true
+          isSetofReturn: false
         }
       }
     }

@@ -115,6 +115,117 @@ export type {
   VerifyPhoneOtpVariables,
 } from './auth/types'
 
+// P7 — the `storage/` module: hooks over `supabase.storage` (also available
+// fully wired via the `createSupabaseQuery` factory), plus query-option builders
+// and variable/entity types.
+export { getFileQuery, getFilesQuery } from './storage/queryOptions'
+export { useFiles } from './storage/useFiles'
+export { useFile } from './storage/useFile'
+export { useCreateFile } from './storage/useCreateFile'
+export { useUpdateFile } from './storage/useUpdateFile'
+export { useDeleteFile } from './storage/useDeleteFile'
+export { useFileDownload } from './storage/useFileDownload'
+export { useFileView } from './storage/useFileView'
+export { useFilePreview } from './storage/useFilePreview'
+export { useSignedUrl } from './storage/useSignedUrl'
+export type {
+  CreateFileVariables,
+  DeleteFileVariables,
+  DownloadFileVariables,
+  DownloadOptions,
+  FileBody,
+  FileInfo,
+  FileObject,
+  FileOptions,
+  FilesVariables,
+  FileVariables,
+  SearchOptions,
+  TransformOptions,
+  UpdateFileVariables,
+  UploadResult,
+} from './storage/types'
+
+// P8 — the `functions/` module: Edge Function invocation + Postgres RPC (also
+// available fully wired via the `createSupabaseQuery` factory, where the RPC
+// hooks are `Database`-typed).
+export { useFunction, useSuspenseFunction } from './functions/useFunction'
+export { useCallRpc, useRpc } from './functions/useRpc'
+export type { FunctionVariables, InvokeOptions, RpcArgs } from './functions/types'
+
+// P9 — the `teams/` module: a library-owned, fixed-shape teams module (also
+// available fully wired via the `createSupabaseQuery` factory, or per-project via
+// `makeTeamsHooks<Role>(config)`). The schema-of-record ships in `sql/teams` and
+// installs with `npx @zeroin.earth/supabase-query add-teams`.
+export {
+  membershipQueryOptions,
+  membershipsQueryOptions,
+  teamPrefsQueryOptions,
+  teamQueryOptions,
+  teamsQueryOptions,
+} from './teams/queryOptions'
+export { useTeams } from './teams/useTeams'
+export { useTeam } from './teams/useTeam'
+export { useTeamPrefs } from './teams/useTeamPrefs'
+export { useTeamMemberships } from './teams/useTeamMemberships'
+export { useTeamMembership } from './teams/useTeamMembership'
+export { updateTeamNameFn, useUpdateTeamName } from './teams/useUpdateTeamName'
+export { updateTeamPrefsFn, useUpdateTeamPrefs } from './teams/useUpdateTeamPrefs'
+export { deleteTeamFn, useDeleteTeam } from './teams/useDeleteTeam'
+export { useCreateTeam } from './teams/useCreateTeam'
+export { useCreateMembership } from './teams/useCreateMembership'
+export { useUpdateMembership } from './teams/useUpdateMembership'
+export { useUpdateMembershipStatus } from './teams/useUpdateMembershipStatus'
+export { useDeleteMembership } from './teams/useDeleteMembership'
+export { CANONICAL_TEAMS_CONFIG, makeTeamsHooks, resolveTeamsConfig } from './teams'
+export type {
+  AcceptInviteVariables,
+  CreateMembershipVariables,
+  CreateTeamVariables,
+  DeleteTeamVariables,
+  LeaveTeamVariables,
+  RemoveMemberVariables,
+  ResolvedTeamsConfig,
+  SetMemberStatusVariables,
+  Team,
+  TeamMember,
+  TeamMembershipsResult,
+  TeamMembershipsVariables,
+  TeamMembershipVariables,
+  TeamMemberStatus,
+  TeamsConfig,
+  TeamsResult,
+  TeamVariables,
+  UpdateMembershipVariables,
+  UpdateTeamNameVariables,
+  UpdateTeamPrefsVariables,
+} from './teams'
+
+// P9b — the `push/` module: a library-owned, fixed-shape push module replacing
+// Appwrite Messaging (also available fully wired via the `createSupabaseQuery`
+// factory, or per-project via `makePushHooks(config)`). The device_tokens
+// schema-of-record ships in `sql/push` and installs with
+// `npx @zeroin.earth/supabase-query add push`; the `send-push` Edge Function
+// holds the provider secrets.
+export { getDeviceTokensQuery } from './push/queryOptions'
+export { useDeviceTokens } from './push/useDeviceTokens'
+export { useRegisterDevice } from './push/useRegisterDevice'
+export { useUnregisterDevice } from './push/useUnregisterDevice'
+export { useSendPush } from './push/useSendPush'
+export type { SendPushResult } from './push/useSendPush'
+export { CANONICAL_PUSH_CONFIG, makePushHooks, resolvePushConfig } from './push'
+export type {
+  DevicePlatform,
+  DeviceToken,
+  DeviceTokensResult,
+  PushConfig,
+  PushProvider,
+  PushQueryOptions,
+  RegisterDeviceVariables,
+  ResolvedPushConfig,
+  SendPushVariables,
+  UnregisterDeviceVariables,
+} from './push'
+
 // P5 — offline engine: offline-capable client factory, conflict resolution, the
 // replay registry, and network adapter type. The concrete web/native network
 // adapters are exported per-platform from `index.ts` / `native-entry.ts`.

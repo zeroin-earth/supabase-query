@@ -1,6 +1,6 @@
 {
   "name": "@zeroin.earth/supabase-query",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "React hooks library for Supabase with offline-first support, powered by @tanstack/react-query",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -29,8 +29,14 @@
   },
   "files": [
     "dist",
-    "react-native"
+    "react-native",
+    "sql",
+    "bin",
+    "supabase/functions"
   ],
+  "bin": {
+    "supabase-query": "./bin/add.mjs"
+  },
   "author": "Matt Suhay <matthew.suhay@gmail.com>",
   "license": "MIT",
   "scripts": {
@@ -40,7 +46,7 @@
     "lint": "eslint . --fix",
     "format": "prettier --write .",
     "test": "bun test --timeout 30000",
-    "gen:types": "supabase gen types typescript --local > src/database.types.ts",
+    "gen:types": "supabase gen types typescript --local > tests/database.types.ts",
     "prepublishOnly": "bun run typecheck && bun run build"
   },
   "dependencies": {

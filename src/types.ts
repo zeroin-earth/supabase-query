@@ -15,12 +15,30 @@ export type AnyDatabase = any
 export type AnySupabaseClient = SupabaseClient<AnyDatabase>
 
 /**
+ * The `StorageError` type, derived from a storage call's `error` field so it
+ * tracks the installed `@supabase/storage-js` version without importing that
+ * transitive package directly.
+ */
+type StorageError = NonNullable<
+  Awaited<ReturnType<ReturnType<SupabaseClient['storage']['from']>['list']>>['error']
+>
+
+/**
+ * The `FunctionsError` type, derived from an Edge Function invocation's `error`
+ * field so it tracks the installed `@supabase/functions-js` version without
+ * importing that transitive package directly (mirrors `StorageError`).
+ */
+type FunctionsError = NonNullable<
+  Awaited<ReturnType<SupabaseClient['functions']['invoke']>>['error']
+>
+
+/**
  * The error type surfaced through TanStack Query. Supabase calls resolve to
  * `{ data, error }` and never throw, so hooks re-throw `error`; this is what
- * `useQuery`/`useMutation` expose as their `error`. Storage/Functions phases
- * may widen this union as needed.
+ * `useQuery`/`useMutation` expose as their `error`. Widened in P7 to include
+ * `StorageError` and in P8 to include `FunctionsError`.
  */
-export type SupabaseException = PostgrestError | AuthError
+export type SupabaseException = PostgrestError | AuthError | StorageError | FunctionsError
 
 /**
  * Resolves intersection and mapped types into a flat object for cleaner IntelliSense.

@@ -38,6 +38,10 @@ interface Membership {
   membership?: string
 }
 
+interface Push {
+  push?: string
+}
+
 /**
  * Fluent, type-safe query-key factory.
  *
@@ -89,6 +93,10 @@ export class Keys<T> {
 
   static team(id: string) {
     return Keys.create<Team>('teams', id)
+  }
+
+  static push() {
+    return Keys.create<Push>('push')
   }
 
   anonymous(this: Keys<Auth>) {
@@ -260,6 +268,15 @@ export class Keys<T> {
   membershipStatus(this: Keys<Team>) {
     this.keys.push('membershipStatus')
     return this as unknown as Keys<Actionable>
+  }
+
+  deviceTokens(this: Keys<Push>) {
+    this.keys.push('deviceTokens')
+    return this as unknown as Keys<Actionable>
+  }
+
+  send(this: Keys<Push>) {
+    return [...this.keys, 'send'] as const
   }
 
   create() {

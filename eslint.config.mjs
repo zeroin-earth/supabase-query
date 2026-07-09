@@ -9,7 +9,17 @@ export default defineConfig(
   eslint.configs.recommended,
   tseslint.configs.recommended,
   {
-    ignores: ['eslint.config.mjs', 'tsdown.config.ts', 'dist/**', 'react-native/**', 'node_modules/**'],
+    ignores: [
+      'eslint.config.mjs',
+      'tsdown.config.ts',
+      'dist/**',
+      'react-native/**',
+      'node_modules/**',
+      // The teams installer (plain Node ESM) and the Deno Edge Functions are not
+      // part of the library's TS program — they run in other runtimes.
+      'bin/**',
+      'supabase/**',
+    ],
   },
   {
     files: ['**/*.{js,mjs,cjs,ts,jsx,tsx}'],

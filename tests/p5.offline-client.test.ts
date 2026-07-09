@@ -109,7 +109,7 @@ describe('P5 createOfflineClient', () => {
 })
 
 describe('P5 mutation registry', () => {
-  test('covers row create/delete/upsert/increment/decrement and no auth entries', () => {
+  test('covers row + team-row writes, and no auth/membership entries', () => {
     const keys = mutationRegistry.map((e) => e.mutationKey.join('.'))
 
     expect(keys).toContain(Keys.schema().table('').rows().create().join('.'))
@@ -118,9 +118,18 @@ describe('P5 mutation registry', () => {
     expect(keys).toContain([...Keys.schema().table('').rows().key(), 'incrementColumn'].join('.'))
     expect(keys).toContain([...Keys.schema().table('').rows().key(), 'decrementColumn'].join('.'))
 
+    // Teams (P9): only the plain-table team writes are offline-queueable.
+    expect(keys).toContain(Keys.teams().teamName().update().join('.'))
+    expect(keys).toContain(Keys.teams().teamPrefs().update().join('.'))
+    expect(keys).toContain(Keys.teams().delete().join('.'))
+
     // Auth mutations are online-only and must NOT be queueable (migration §6.5).
     expect(keys.some((k) => k.includes('auth'))).toBe(false)
-    // The update key is registered separately (conflict-aware), not in the array.
+    // create_team + every membership op are RPC/Edge → online-only, so they must
+    // NOT be in the queue (§8.8 "Offline wiring").
+    expect(keys).not.toContain(Keys.teams().create().join('.'))
+    expect(keys.some((k) => k.includes('memberships'))).toBe(false)
+    // The row update key is registered separately (conflict-aware), not in the array.
     expect(keys).not.toContain(Keys.schema().table('').rows().update().join('.'))
   })
 
