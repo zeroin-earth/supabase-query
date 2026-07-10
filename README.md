@@ -145,11 +145,11 @@ Postgres has one table API, so the vocabulary is `schema → table → row`.
 | `useRows(table, builder?, opts?)` / `useSuspenseRows`   | Read a list; returns `{ rows, total }` (`count:'exact'`).|
 | `useInfiniteRows(table, builder?, opts?)`               | Keyset-paginated infinite scroll.                        |
 | `useRowsWithPagination(table, builder?, opts?)`         | Offset/`range()` pagination.                             |
-| `useCreateRow()`                                         | Insert; optimistic. `{ table, values }`.                 |
+| `useCreateRow()`                                         | Insert; seeds the row cache on success. `{ table, values }`. |
 | `useUpdateRow()`                                         | Partial update; optimistic. `{ table, id, values }`.     |
 | `useUpsertRow()`                                         | Upsert with `onConflict`. `{ table, values, onConflict }`.|
 | `useDeleteRow()`                                         | Delete; optimistic. `{ table, id }`.                     |
-| `useIncrementColumn()` / `useDecrementColumn()`         | Atomic `col = col ± n` via an RPC (see [RPC](#edge-functions--rpc)). |
+| `useIncrementColumn()` / `useDecrementColumn()`         | Atomic `col = col ± n` via an RPC; optimistic (see [RPC](#edge-functions--rpc)). |
 
 Reads default to `schema: 'public'`, `select: '*'`, and `subscribe: true` (live realtime). Rows are plain typed column objects; the primary key is a first-class `id` column.
 
@@ -158,6 +158,15 @@ Every mutation variable carries `table` (and optional `schema`) so the offline r
 ```tsx
 const { mutate: update } = useUpdateRow()
 update({ table: 'todos', id, values: { done: true } }) // optimistic; rolls back on error
+```
+
+**What "optimistic" covers.** The patch lands in the single-row cache *and* in every cached `useRows` list holding that row — including the lists behind `useInfiniteRows` and `useRowsWithPagination`. Lists are what a screen usually renders, and a mutation paused offline never reaches `onSettled` to invalidate anything, so a row-key-only patch would make an offline edit invisible until reconnect.
+
+One thing it can't do: re-evaluate a list's filters. `useRows('todos', q => q.eq('done', false))` keeps showing a row you just patched to `done: true` until the post-mutation refetch lands. Filter it client-side if that gap matters:
+
+```tsx
+const { rows } = useRows('todos', (q) => q.eq('done', false))
+const visible = rows?.filter((t) => !t.done) ?? []
 ```
 
 ---

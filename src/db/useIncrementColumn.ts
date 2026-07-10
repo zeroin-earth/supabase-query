@@ -1,4 +1,5 @@
-import type { IncrementColumnVariables, Row, RowMutationContext } from './types'
+import { cancelRowQueries, findCachedRow, patchRow, rowKeyOf } from './optimisticRows'
+import type { IncrementColumnVariables, RowMutationContext } from './types'
 import { Keys } from '../query/Keys'
 import type { AnySupabaseClient, SupabaseException } from '../types'
 import { useMutation } from '../useMutation'
@@ -35,21 +36,33 @@ export function useAdjustColumn(sign: 1 | -1) {
     mutationFn: ({ amount = 1, ...rest }) =>
       incrementColumnFn(supabase, { ...rest, amount: sign * amount }),
     onMutate: async ({ table, schema = 'public', id, column, amount = 1 }) => {
-      const rowKey = Keys.schema(schema).table(table).row(id).key()
-      await queryClient.cancelQueries({ queryKey: rowKey })
+      const target = { schema, table, id }
+      const rowKey = rowKeyOf(target)
+      await cancelRowQueries(queryClient, target)
       const previousEntries = queryClient.getQueriesData({ queryKey: rowKey })
 
-      queryClient.setQueryData<Row>(rowKey, (old) => {
-        if (!old) return old
-        const current = (old[column] as number) ?? 0
-        return { ...old, [column]: current + sign * amount }
-      })
+      // The bump is computed once from the cached row, not per cache entry, so
+      // the row key and every list agree on the optimistic value.
+      const base = findCachedRow(queryClient, target)
+      if (base) {
+        const current = (base[column] as number) ?? 0
+        patchRow(queryClient, target, { [column]: current + sign * amount })
+      }
 
-      return { previousEntries, rowKey }
+      return { previousEntries, rowKey, baseSnapshot: base }
     },
-    onError: (_error, _variables, context) => {
+    onError: (_error, { table, schema = 'public', id, column }, context) => {
       for (const [key, data] of context?.previousEntries ?? []) {
         queryClient.setQueryData(key, data)
+      }
+      if (context?.baseSnapshot) {
+        patchRow(
+          queryClient,
+          { schema, table, id },
+          {
+            [column]: context.baseSnapshot[column],
+          },
+        )
       }
     },
     onSettled: (_data, _error, { table, schema = 'public', id }) => {

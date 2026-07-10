@@ -1,7 +1,7 @@
 // Platform-neutral exports shared by both the web (`src/index.ts`) and React
 // Native (`src/native-entry.ts`) entries. Populated across phases P1–P9.
 
-export const version = '0.1.0'
+export const version = '1.1.0'
 
 // P1 — client, context, and accessor
 export { createSupabaseClient } from './client'

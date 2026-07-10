@@ -77,18 +77,35 @@ export type IncrementColumnVariables = {
   rpc?: string
 }
 
+/** Identifies one row across every cache entry that can hold it. */
+export type RowTarget = { schema: string; table: string; id: string }
+
+/** Where a removed row sat in each cached list, so it can be restored in place. */
+export type RowPositions = [queryKey: readonly unknown[], index: number][]
+
 /** Optimistic-update context shared by the row mutation hooks. */
 export type RowMutationContext = {
+  /**
+   * Snapshot of the *single-row* cache entries only. Cached lists are rolled back
+   * by re-applying {@link RowMutationContext.baseSnapshot} (or reinserting the
+   * removed row), never by snapshotting them: a paused mutation's context is
+   * persisted to storage, and whole list arrays would bloat it.
+   */
   previousEntries: [queryKey: readonly unknown[], data: unknown][]
   rowKey: readonly unknown[]
   /**
    * A deep copy of the row before the optimistic patch, captured by
-   * `useUpdateRow`. Persisted through dehydration so it can serve as the "base"
-   * for three-way conflict resolution when a paused mutation is replayed (offline
-   * engine, migration plan §6.5).
+   * `useUpdateRow` from the row cache or, failing that, from any cached list.
+   * Persisted through dehydration so it can serve as the "base" for three-way
+   * conflict resolution when a paused mutation is replayed (offline engine,
+   * migration plan §6.5).
    */
   baseSnapshot?: Record<string, unknown>
   /** Set by `useUpdateRow.onMutate` when the mutation was created offline, so its
    * mutationFn routes the in-session resume through {@link conflictAwareUpdate}. */
   willPerformOfflineMutation?: boolean
+  /** The row `useDeleteRow` optimistically removed, for restoring it on error. */
+  removedRow?: Row
+  /** Where that row sat in each cached list, so the restore preserves ordering. */
+  removedPositions?: RowPositions
 }

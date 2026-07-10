@@ -28,7 +28,9 @@ export type {
   ReadOptions,
   Row,
   RowMutationContext,
+  RowPositions,
   RowsResult,
+  RowTarget,
   UpdateRowVariables,
   UpsertRowVariables,
 } from './types'

@@ -7,6 +7,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, mock, test } from 'bu
 import { LOCAL_ANON_KEY, LOCAL_URL, makeAdminClient } from './setup/localStack'
 import type { SupabaseHooksClient } from '../src/client'
 import { useCreateRow } from '../src/db/useCreateRow'
+import { useRows } from '../src/db/useRows'
 import { useUpdateRow } from '../src/db/useUpdateRow'
 import type { ConflictStrategy } from '../src/offline/conflictResolution/types'
 import { createOfflineClient } from '../src/offline/createOfflineClient'
@@ -68,10 +69,12 @@ afterAll(async () => {
 })
 
 /** An authenticated offline client + a provider wrapper over its queryClient. */
-async function setupOffline(opts: {
-  conflictStrategy?: ConflictStrategy
-  storage?: Storage
-} = {}) {
+async function setupOffline(
+  opts: {
+    conflictStrategy?: ConflictStrategy
+    storage?: Storage
+  } = {},
+) {
   const offline = createOfflineClient({
     url: LOCAL_URL,
     anonKey: LOCAL_ANON_KEY,
@@ -209,9 +212,26 @@ describe('P5 offline — conflict resolution', () => {
     base: Partial<Todo>
     offlinePatch: Partial<Todo>
     remotePatch: Partial<Todo>
+    /**
+     * Where the conflict base comes from. `'row'` leaves the single-row cache
+     * `useCreateRow` seeds; `'list'` drops it and populates a `useRows` list
+     * instead — the shape of a screen that only ever renders lists.
+     */
+    cachedAs?: 'row' | 'list'
   }): Promise<Todo> {
-    const { supabase, wrapper } = await setupOffline({ conflictStrategy: opts.conflictStrategy })
+    const { supabase, wrapper, queryClient } = await setupOffline({
+      conflictStrategy: opts.conflictStrategy,
+    })
     const row = await createBaseRow(wrapper, opts.base)
+
+    if (opts.cachedAs === 'list') {
+      queryClient.removeQueries({ queryKey: Keys.schema().table('todos').row(row.id).key() })
+      const { result: list } = renderHook(
+        () => useRows<Todo>('todos', (q) => q.eq('id', row.id), { subscribe: false }),
+        { wrapper },
+      )
+      await waitFor(() => expect(list.current.isSuccess).toBe(true))
+    }
 
     onlineManager.setOnline(false)
     const { result } = renderHook(() => useUpdateRow<Todo, Partial<Todo>>(), { wrapper })
@@ -265,6 +285,22 @@ describe('P5 offline — conflict resolution', () => {
       remotePatch: { priority: 22 }, // remote touches priority only
     })
     expect(final.title).toBe('Offline Update')
+    expect(final.priority).toBe(22)
+  }, 15_000)
+
+  // The conflict base is whatever `onMutate` could find in the cache. A screen
+  // built only from `useRows` never populates the single-row entry, so without
+  // the list fallback `baseSnapshot` is undefined, resolution is skipped, and the
+  // strategy silently degrades to a blind last-write-wins update.
+  test('resolves against a base taken from a cached list, with no row cache', async () => {
+    const final = await runConflict({
+      conflictStrategy: 'server-wins',
+      cachedAs: 'list',
+      base: { title: 'Original', priority: 20 },
+      offlinePatch: { title: 'Offline Update', priority: 21 },
+      remotePatch: { title: 'Remote Update', priority: 22 },
+    })
+    expect(final.title).toBe('Remote Update')
     expect(final.priority).toBe(22)
   }, 15_000)
 })
