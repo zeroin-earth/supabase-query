@@ -412,9 +412,18 @@ supabase functions deploy send-push
 # teams — reuses your project's auth mail config (§8.9); no extra secret.
 
 # push:
-supabase secrets set FCM_SERVICE_ACCOUNT="$(cat service-account.json)"
+# jq -c validates the JSON and stores it on one line — plain `cat` can leave
+# newlines/escaping that break JSON.parse at runtime.
+supabase secrets set FCM_SERVICE_ACCOUNT="$(jq -c . < service-account.json)"
 supabase secrets set EXPO_ACCESS_TOKEN="<optional>"
+# For server-to-server callers (cron, n8n, Home Assistant), set a dedicated
+# secret rather than handing out the project's secret key:
+supabase secrets set PUSH_SHARED_SECRET="$(openssl rand -hex 32)"
 ```
+
+`send-push` authorizes on any of: `PUSH_SHARED_SECRET` (preferred for
+server-to-server), the project's secret key (`SUPABASE_SECRET_KEYS`, falling back
+to the deprecated `SUPABASE_SERVICE_ROLE_KEY`), or a signed-in user's JWT.
 
 For push you also generate an FCM VAPID key pair (web) and, optionally, an Expo access token. See [migration plan §8.8 / §8.12](SUPABASE_MIGRATION_PLAN.md) for the full walkthrough.
 

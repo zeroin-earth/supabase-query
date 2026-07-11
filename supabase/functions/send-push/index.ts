@@ -114,24 +114,57 @@ async function fcmAccessToken(sa: ServiceAccount): Promise<string> {
   return token.access_token
 }
 
+/**
+ * Resolve the elevated (RLS-bypassing) API key for the admin client.
+ *
+ * Projects on JWT Signing Keys issue **secret keys** (`sb_secret_…`) exposed as
+ * `SUPABASE_SECRET_KEYS` — a JSON object keyed by name, with the key created
+ * during migration named `default`. `SUPABASE_SERVICE_ROLE_KEY` is the legacy,
+ * now-deprecated equivalent; we fall back to it for projects not yet migrated.
+ */
+function resolveSecretKey(): string | undefined {
+  const raw = Deno.env.get('SUPABASE_SECRET_KEYS')
+  if (raw) {
+    try {
+      const keys = JSON.parse(raw) as Record<string, string>
+      const key = keys.default ?? Object.values(keys)[0]
+      if (key) return key
+    } catch {
+      // Malformed JSON — fall through to the legacy key.
+    }
+  }
+  return Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? undefined
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
   if (req.method !== 'POST') return json({ error: 'method not allowed' }, 405)
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
-  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-  if (!supabaseUrl || !serviceKey) return json({ error: 'server misconfigured' }, 500)
+  const secretKey = resolveSecretKey()
+  if (!supabaseUrl || !secretKey) return json({ error: 'server misconfigured' }, 500)
 
-  const admin = createClient(supabaseUrl, serviceKey, {
+  const admin = createClient(supabaseUrl, secretKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   })
 
-  // 1. Authorize the caller. A bare service-role key (S2S) is allowed; otherwise
-  //    require a valid user JWT. (Extend here to gate who may push to whom.)
+  // 1. Authorize the caller. Three accepted credentials:
+  //      - PUSH_SHARED_SECRET  — a dedicated secret for server-to-server senders
+  //        (n8n, Home Assistant, cron). Preferred: it's independent of Supabase
+  //        key rotation and keeps the all-powerful secret key out of third
+  //        parties. Set it with `supabase secrets set PUSH_SHARED_SECRET=...`.
+  //      - the project's secret key (`sb_secret_…`, or the legacy service-role
+  //        key on unmigrated projects) — accepted for backward compatibility.
+  //      - a valid user JWT — the in-app path.
+  //    (Extend here to gate who may push to whom.) `.trim()` guards against a
+  //    stray newline/space that some HTTP clients append to header values.
   const authHeader = req.headers.get('Authorization') ?? ''
-  const token = authHeader.replace(/^Bearer\s+/i, '')
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim()
   if (!token) return json({ error: 'missing authorization' }, 401)
-  if (token !== serviceKey) {
+  const sharedSecret = Deno.env.get('PUSH_SHARED_SECRET')
+  const isServerToServer =
+    token === secretKey || (!!sharedSecret && token === sharedSecret)
+  if (!isServerToServer) {
     const { data: userData, error: userErr } = await admin.auth.getUser(token)
     if (userErr || !userData.user) return json({ error: 'invalid token' }, 401)
   }
